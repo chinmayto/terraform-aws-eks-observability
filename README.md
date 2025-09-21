@@ -396,3 +396,4 @@ Remember to regularly review and update your monitoring configuration as your ap
 - [Amazon EKS User Guide](https://docs.aws.amazon.com/eks/latest/userguide/)
 - [Kubernetes Monitoring Best Practices](https://kubernetes.io/docs/concepts/cluster-administration/monitoring/)
 - [Prometheus Operator Documentation](https://prometheus-operator.dev/)
+
