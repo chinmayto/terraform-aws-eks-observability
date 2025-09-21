@@ -1,6 +1,4 @@
-# Monitoring Your EKS Cluster: A Complete Guide to Prometheus and Grafana with Helm
-
-# Observability on Amazon EKS with Prometheus and Grafana with Helm
+# Observability on Amazon EKS Cluster: A Complete Guide to Prometheus and Grafana with Helm
 
 When deploying applications on Amazon Elastic Kubernetes Service (EKS), ensuring that you can observe, monitor, and troubleshoot workloads effectively is crucial. This is where observability comes into play. In this blog, we’ll set up an EKS cluster using AWS Community Terraform modules, install Prometheus and Grafana for monitoring and visualization, configure Route53 DNS records, and deploy a sample microservices application (Voting App).## Why Prometheus and Grafana?
 
@@ -38,15 +36,15 @@ Our monitoring architecture consists of several key components:
 ┌─────────────────────────────────────────────────────────────┐
 │                        EKS Cluster                          │
 │                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐                │
-│  │   Prometheus    │◄───┤  Node Exporter  │                │
-│  │     Server      │    │                 │                │
-│  │                 │    └─────────────────┘                │
+│  ┌─────────────────┐    ┌─────────────────┐                 │
+│  │   Prometheus    │◄───┤  Node Exporter  │                 │
+│  │     Server      │    │                 │                 │
+│  │                 │    └─────────────────┘                 │
 │  │  - Scrapes      │                                        │
-│  │  - Stores       │    ┌─────────────────┐                │
-│  │  - Alerts       │◄───┤ kube-state-     │                │
-│  └─────────────────┘    │ metrics         │                │
-│           │              └─────────────────┘                │
+│  │  - Stores       │    ┌─────────────────┐                 │
+│  │  - Alerts       │◄───┤ kube-state-     │                 │
+│  └─────────────────┘    │ metrics         │                 │
+│           │             └─────────────────┘                 │
 │           │                                                 │
 │           ▼              ┌─────────────────┐                │
 │  ┌─────────────────┐◄────┤   Application   │                │
@@ -106,13 +104,17 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 # Add Grafana Helm repository  
 helm repo add grafana https://grafana.github.io/helm-charts
 
+# Add Nginx Ingress Helm repository  
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
 # Update repositories
 helm repo update
 ```
 
 ## Step 3: Install NGINX Ingress Controller with Helm
 
-To expose Prometheus, Grafana, and other applications securely outside the cluster, we need an Ingress Controller. We’ll use the NGINX Ingress Controller, installed via Helm.
+To expose Prometheus, Grafana, and other applications securely outside the cluster, we need an Ingress Controller. We’ll use the NGINX Ingress Controller, installed via Helm in its own namespace.
 
 ```terraform
 ################################################################################
@@ -220,7 +222,9 @@ resource "aws_route53_record" "grafana" {
 
 ### Step 5: Install Prometheus Stack
 
-We’ll use the Terraform Helm provider to install both Prometheus (for metrics collection) and Grafana (for visualization).
+We’ll use the Terraform Helm provider to install both Prometheus (for metrics collection) and Grafana (for visualization) in its own namespace.
+
+The kube-prometheus-stack Helm chart is an umbrella chart maintained by the Prometheus community. It includes Prometheus, Grafana, and kube-state-metrics all bundled together. That’s why deploying just this chart is usually sufficient for Kubernetes observability.
 
 ```terraform
 ################################################################################
@@ -305,34 +309,8 @@ kubectl apply -f .
 ```
 
 ## Accessing Your Monitoring Stack
+You can access Prometheus at https://prometheus.chinmayto.com and Grafana at https://grafana.chinmayto.com.
 
-### Accessing Grafana
-
-If you set Grafana service type to LoadBalancer, get the external IP:
-
-```bash
-kubectl get svc prometheus-grafana -n monitoring
-```
-
-For port-forwarding (alternative approach):
-
-```bash
-kubectl port-forward svc/prometheus-grafana 3000:80 -n monitoring
-```
-
-Access Grafana at `http://localhost:3000` with:
-- Username: `admin`
-- Password: `admin123` (or what you set)
-
-### Accessing Prometheus
-
-Port-forward to access Prometheus UI:
-
-```bash
-kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090 -n monitoring
-```
-
-Access at `http://localhost:9090`
 
 ## Validation Steps
 
