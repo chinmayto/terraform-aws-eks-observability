@@ -106,7 +106,6 @@ helm repo add grafana https://grafana.github.io/helm-charts
 
 # Add Nginx Ingress Helm repository  
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
 
 # Update repositories
 helm repo update
@@ -304,7 +303,7 @@ Now that observability is in place, let’s deploy a sample microservices app: t
 
 Apply manifests:
 ```bash
-cd /example-voting-app/k8s-specifications
+cd example-voting-app/k8s-specifications
 kubectl apply -f .
 ```
 
@@ -312,7 +311,7 @@ kubectl apply -f .
 You can access Prometheus at https://prometheus.chinmayto.com and Grafana at https://grafana.chinmayto.com.
 
 
-## Validation Steps
+### Validation Steps
 
 ### 1. Verify Prometheus Targets
 
@@ -336,6 +335,12 @@ Try these sample queries in Prometheus:
 count by (namespace) (kube_pod_info)
 ```
 
+![alt text](/images/prom_1.png)
+
+![alt text](/images/prom_2.png)
+
+![alt text](/images/prom_3.png)
+
 ### 3. Verify Grafana Dashboards
 
 Grafana comes with pre-built dashboards:
@@ -343,155 +348,8 @@ Grafana comes with pre-built dashboards:
 2. Check "Kubernetes / Compute Resources / Cluster"
 3. Verify data is displaying correctly
 
-### 4. Test Alerting (Optional)
+![alt text](/images/graf_1.png)
 
-Create a simple test alert:
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:
-  name: test-alert
-  namespace: monitoring
-spec:
-  groups:
-  - name: test.rules
-    rules:
-    - alert: HighCPUUsage
-      expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
-      for: 2m
-      labels:
-        severity: warning
-      annotations:
-        summary: "High CPU usage detected"
-```
-
-Apply with:
-```bash
-kubectl apply -f test-alert.yaml
-```
-
-## Customization and Best Practices
-
-### Storage Configuration
-
-For production, configure persistent storage:
-
-```yaml
-prometheus:
-  prometheusSpec:
-    storageSpec:
-      volumeClaimTemplate:
-        spec:
-          storageClassName: gp3
-          resources:
-            requests:
-              storage: 100Gi
-```
-
-### Resource Limits
-
-Set appropriate resource limits:
-
-```yaml
-prometheus:
-  prometheusSpec:
-    resources:
-      requests:
-        memory: 2Gi
-        cpu: 1000m
-      limits:
-        memory: 4Gi
-        cpu: 2000m
-```
-
-### Security Considerations
-
-1. **Change default passwords**
-2. **Enable RBAC**
-3. **Use network policies**
-4. **Configure TLS/SSL**
-
-```bash
-# Generate secure password
-kubectl create secret generic grafana-admin-password \
-  --from-literal=admin-password=$(openssl rand -base64 32) \
-  -n monitoring
-```
-
-## Troubleshooting Common Issues
-
-### Issue 1: Pods Stuck in Pending State
-
-Check node resources and storage classes:
-
-```bash
-kubectl describe pod <pod-name> -n monitoring
-kubectl get storageclass
-```
-
-### Issue 2: Prometheus Not Scraping Targets
-
-Verify service monitors and network policies:
-
-```bash
-kubectl get servicemonitor -n monitoring
-kubectl get networkpolicy -n monitoring
-```
-
-### Issue 3: Grafana Dashboard Not Loading Data
-
-Check Prometheus data source configuration in Grafana settings.
-
-## Monitoring Best Practices
-
-1. **Set up proper retention policies**
-2. **Configure meaningful alerts**
-3. **Use labels effectively**
-4. **Monitor the monitoring stack itself**
-5. **Regular backup of Grafana dashboards**
-6. **Implement proper access controls**
-
-## Advanced Configuration
-
-### Custom Metrics
-
-Add custom application metrics:
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: my-app-metrics
-  namespace: monitoring
-spec:
-  selector:
-    matchLabels:
-      app: my-application
-  endpoints:
-  - port: metrics
-    path: /metrics
-```
-
-### External Alerting
-
-Configure Slack notifications:
-
-```yaml
-alertmanager:
-  config:
-    global:
-      slack_api_url: 'YOUR_SLACK_WEBHOOK_URL'
-    route:
-      group_by: ['alertname']
-      receiver: 'slack-notifications'
-    receivers:
-    - name: 'slack-notifications'
-      slack_configs:
-      - channel: '#alerts'
-        title: 'Kubernetes Alert'
-        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-```
 ## Few Best Grafana Dashboards for EKS Monitoring
 
 Grafana provides a wide range of prebuilt dashboards for Kubernetes and Prometheus. Some of the most popular ones for EKS monitoring include:
@@ -505,10 +363,14 @@ Grafana provides a wide range of prebuilt dashboards for Kubernetes and Promethe
 - Kube-State-Metrics Dashboards (ID: 13332): Tracks states of Kubernetes objects like deployments, daemonsets, jobs, and cronjobs.
 These dashboards can be directly imported into Grafana using their Dashboard IDs from Grafana Labs Dashboard Repository
 
+![alt text](/images/graf_2.png)
+
+![alt text](/images/graf_3.png)
+
 ## Cleanup
 Delete the k8s resources created
 ```bash
-cd /example-voting-app/k8s-specifications
+cd example-voting-app/k8s-specifications
 kubectl delete -f .
 ```
 And then `terraform destroy` the EKS infrastructure if you are not using it to save costs.
@@ -534,11 +396,3 @@ Remember to regularly review and update your monitoring configuration as your ap
 - [Amazon EKS User Guide](https://docs.aws.amazon.com/eks/latest/userguide/)
 - [Kubernetes Monitoring Best Practices](https://kubernetes.io/docs/concepts/cluster-administration/monitoring/)
 - [Prometheus Operator Documentation](https://prometheus-operator.dev/)
-
----
-
-*Happy monitoring! 🚀*
-
----
-
-**Tags:** #kubernetes #eks #prometheus #grafana #monitoring #helm #devops #aws #observability
